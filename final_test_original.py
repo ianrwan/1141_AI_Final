@@ -1,479 +1,312 @@
-# Wine Quality Prediction with XGBoost - Baseline Model (No Preprocessing)
-# This script trains an XGBoost model on raw, unprocessed data for comparison with preprocessed results
+# Wine Quality Prediction with XGBoost - Raw Data Version
+# This file is: final_test_raw.py (Using raw data without preprocessing)
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, confusion_matrix
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 import xgboost as xgb
 import warnings
 warnings.filterwarnings('ignore')
 
-# 1. Load Raw Wine Data
-def load_raw_wine_data(file_path='dataset/winequality-red.csv'):
-    """Load raw wine quality dataset"""
-    print("Loading raw wine data...")
+# 1. Load Raw Data
+def load_raw_data():
+    """Load raw wine quality data"""
+    print("Loading raw wine quality data...")
     
     try:
         # Note: Data uses semicolon delimiter
-        df = pd.read_csv(file_path, sep=';')
+        df = pd.read_csv('dataset/winequality-red.csv', sep=';')
         print(f"Raw data loaded successfully! Total {df.shape[0]} rows, {df.shape[1]} columns")
         
-        # Display basic information
-        print("\n=== Raw Data Information ===")
-        print(f"Data shape: {df.shape}")
-        print(f"Data types:\n{df.dtypes}")
-        print(f"\nFirst 5 rows:")
-        print(df.head())
+        # Prepare data - separate features and target
+        X = df.drop('quality', axis=1)
+        y = df['quality']
         
-        return df
+        print(f"Features shape: {X.shape}")
+        print(f"Target shape: {y.shape}")
+        print(f"Features used: {list(X.columns)}")
+        
+        return X, y
     except FileNotFoundError as e:
         print(f"Error: File not found - {e}")
-        return None
+        return None, None
 
-# 2. Train Baseline XGBoost Model (No Preprocessing)
-def train_baseline_xgboost_model(df, test_size=0.2, random_state=42):
+# 2. Train XGBoost Model on Raw Data
+def train_xgboost_model_raw(X, y):
     """Train and evaluate XGBoost model on raw data"""
-    print("\n" + "="*60)
-    print("Training Baseline XGBoost Model (No Preprocessing)")
-    print("="*60)
+    print("\n=== Training XGBoost Model on RAW DATA ===")
     
-    # Prepare data
-    # Separate features and target
-    # Assuming 'quality' is the target column
-    X = df.drop('quality', axis=1)
-    y = df['quality']
-    
-    print(f"Features shape: {X.shape}")
-    print(f"Target shape: {y.shape}")
-    print(f"Features used: {list(X.columns)}")
-    
-    # Split data (without stratification to match raw data distribution)
+    # Split data (same parameters as preprocessed version)
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=random_state
+        X, y, test_size=0.2, random_state=42
     )
     
-    print(f"\nTraining set size: {X_train.shape}")
+    print(f"Training set size: {X_train.shape}")
     print(f"Testing set size: {X_test.shape}")
-    print(f"Training target distribution: \n{y_train.value_counts().sort_index()}")
-    print(f"Testing target distribution: \n{y_test.value_counts().sort_index()}")
     
-    # Initialize XGBoost regressor
-    print("\nInitializing XGBoost regression model...")
+    # Initialize XGBoost regressor (same parameters as preprocessed version)
+    model = xgb.XGBRegressor(
+        n_estimators=500,
+        learning_rate=0.05,
+        max_depth=5,
+        min_child_weight=1,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        random_state=42,
+        n_jobs=-1
+    )
     
-    # Use same parameters as preprocessed model for fair comparison
-    try:
-        # Try new version approach
-        model = xgb.XGBRegressor(
-            n_estimators=300,
-            learning_rate=0.05,
-            max_depth=5,
-            min_child_weight=1,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            random_state=42,
-            n_jobs=-1,
-            eval_metric='rmse'
-        )
-        
-        print("Training with eval_set monitoring...")
-        eval_set = [(X_train, y_train), (X_test, y_test)]
-        model.fit(
-            X_train, y_train,
-            eval_set=eval_set,
-            early_stopping_rounds=20,
-            verbose=50
-        )
-        
-    except TypeError:
-        # Fall back to old version approach
-        print("Using old XGBoost approach...")
-        
-        model = xgb.XGBRegressor(
-            n_estimators=100,
-            learning_rate=0.1,
-            max_depth=5,
-            min_child_weight=1,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            random_state=42,
-            n_jobs=-1
-        )
-        
-        model.fit(X_train, y_train)
+    # Train model
+    model.fit(X_train, y_train)
     
     # Predictions
     y_train_pred = model.predict(X_train)
     y_test_pred = model.predict(X_test)
     
-    # Round predictions to nearest integer
-    y_test_pred_rounded = np.round(y_test_pred).astype(int)
-    
-    return model, X_train, X_test, y_train, y_test, y_train_pred, y_test_pred, y_test_pred_rounded
+    return model, X_train, X_test, y_train, y_test, y_train_pred, y_test_pred
 
-# 3. Evaluate Baseline Model Performance
-def evaluate_baseline_model(y_true, y_pred, dataset_name="Dataset"):
-    """Evaluate regression model performance"""
+# 3. Evaluate Model Performance - SIMPLIFIED VERSION
+def evaluate_model(y_true, y_pred, dataset_name="Dataset"):
+    """Evaluate model performance - focusing on key metrics"""
     print(f"\n=== {dataset_name} Evaluation ===")
     
-    # Calculate regression metrics
+    # Calculate standard regression metrics
     mae = mean_absolute_error(y_true, y_pred)
-    mse = mean_squared_error(y_true, y_pred)
-    rmse = np.sqrt(mse)
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
     r2 = r2_score(y_true, y_pred)
     
+    # Round predictions for accuracy calculation
+    y_pred_rounded = np.round(y_pred).astype(int)
+    
+    # Calculate exact match accuracy
+    accuracy_exact = np.mean(y_true == y_pred_rounded)
+    
+    # Calculate accuracy within ±1 score
+    accuracy_within_one = np.mean(np.abs(y_true - y_pred_rounded) <= 1)
+    
+    print(f"Exact match accuracy: {accuracy_exact:.2%}")
+    print(f"Accuracy within ±1 score: {accuracy_within_one:.2%}")
     print(f"Mean Absolute Error (MAE): {mae:.4f}")
-    print(f"Mean Squared Error (MSE): {mse:.4f}")
     print(f"Root Mean Squared Error (RMSE): {rmse:.4f}")
     print(f"R² Score: {r2:.4f}")
     
-    # Calculate exact accuracy (rounded predictions)
-    y_pred_rounded = np.round(y_pred).astype(int)
-    accuracy_exact = np.mean(y_true == y_pred_rounded)
-    
-    # Calculate prediction within ±1 range
-    diff = np.abs(y_true - y_pred_rounded)
-    accuracy_within_one = np.mean(diff <= 1)
-    
-    print(f"Exact prediction accuracy: {accuracy_exact:.2%}")
-    print(f"Prediction within ±1 score: {accuracy_within_one:.2%}")
-    
     return {
-        'mae': mae,
-        'mse': mse,
-        'rmse': rmse,
-        'r2': r2,
         'accuracy_exact': accuracy_exact,
-        'accuracy_within_one': accuracy_within_one
+        'accuracy_within_one': accuracy_within_one,
+        'mae': mae,
+        'rmse': rmse,
+        'r2': r2
     }
 
-# 4. Visualize Baseline Model Results
-def visualize_baseline_results(y_test, y_test_pred, y_test_pred_rounded, model, X_train):
-    """Visualize baseline model results"""
-    print("\n=== Visualizing Baseline Model Results ===")
+# 4. Simple Visualization for Raw Data
+def simple_visualization_raw(y_test, y_test_pred, model, X_train):
+    """Simple visualization of key results for raw data"""
+    print("\n=== Simple Visualization for RAW DATA ===")
     
-    fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+    # Create figure
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     
     # 1. Actual vs Predicted
-    axes[0, 0].scatter(y_test, y_test_pred, alpha=0.5)
-    axes[0, 0].plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 
-                   'r--', lw=2, label='Perfect Prediction')
-    axes[0, 0].set_xlabel('Actual Quality')
-    axes[0, 0].set_ylabel('Predicted Quality')
-    axes[0, 0].set_title('Actual vs Predicted (Baseline)')
-    axes[0, 0].legend()
-    axes[0, 0].grid(True, alpha=0.3)
+    axes[0].scatter(y_test, y_test_pred, alpha=0.5)
+    axes[0].plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 
+                'r--', lw=2, label='Perfect Prediction')
+    axes[0].set_xlabel('Actual Quality')
+    axes[0].set_ylabel('Predicted Quality')
+    axes[0].set_title('Actual vs Predicted (Raw Data)')
+    axes[0].legend()
+    axes[0].grid(True, alpha=0.3)
     
-    # 2. Error Distribution
-    residuals = y_test - y_test_pred
-    axes[0, 1].hist(residuals, bins=30, edgecolor='black', alpha=0.7)
-    axes[0, 1].axvline(x=0, color='r', linestyle='--', linewidth=2)
-    axes[0, 1].set_xlabel('Prediction Error')
-    axes[0, 1].set_ylabel('Frequency')
-    axes[0, 1].set_title('Error Distribution (Baseline)')
-    axes[0, 1].grid(True, alpha=0.3)
-    
-    # 3. Feature Importance
+    # 2. Feature Importance
     feature_importance = model.feature_importances_
     feature_names = X_train.columns
     importance_df = pd.DataFrame({
         'feature': feature_names,
         'importance': feature_importance
-    }).sort_values('importance', ascending=False)
+    }).sort_values('importance', ascending=False).head(10)
     
-    axes[0, 2].barh(range(len(importance_df)), importance_df['importance'])
-    axes[0, 2].set_yticks(range(len(importance_df)))
-    axes[0, 2].set_yticklabels(importance_df['feature'])
-    axes[0, 2].set_xlabel('Feature Importance')
-    axes[0, 2].set_title('Feature Importance (Baseline)')
-    axes[0, 2].grid(True, alpha=0.3, axis='x')
-    
-    # 4. Confusion Matrix (Rounded)
-    all_classes = np.arange(min(y_test.min(), y_test_pred_rounded.min()), 
-                           max(y_test.max(), y_test_pred_rounded.max()) + 1)
-    
-    cm = confusion_matrix(y_test, y_test_pred_rounded, labels=all_classes)
-    
-    im = axes[1, 0].imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
-    axes[1, 0].set_title('Confusion Matrix (Baseline)')
-    axes[1, 0].set_xlabel('Predicted Quality')
-    axes[1, 0].set_ylabel('Actual Quality')
-    
-    thresh = cm.max() / 2.
-    for i in range(cm.shape[0]):
-        for j in range(cm.shape[1]):
-            axes[1, 0].text(j, i, format(cm[i, j], 'd'),
-                          horizontalalignment="center",
-                          color="white" if cm[i, j] > thresh else "black")
-    
-    axes[1, 0].set_xticks(range(len(all_classes)))
-    axes[1, 0].set_yticks(range(len(all_classes)))
-    axes[1, 0].set_xticklabels(all_classes)
-    axes[1, 0].set_yticklabels(all_classes)
-    
-    # 5. Accuracy by Quality Score
-    quality_scores = np.unique(y_test)
-    accuracy_by_quality = []
-    
-    for score in quality_scores:
-        mask = y_test == score
-        if mask.any():
-            accuracy = np.mean(y_test_pred_rounded[mask] == score)
-            accuracy_by_quality.append(accuracy)
-    
-    axes[1, 1].bar(quality_scores, accuracy_by_quality, alpha=0.7)
-    axes[1, 1].set_xlabel('Quality Score')
-    axes[1, 1].set_ylabel('Accuracy')
-    axes[1, 1].set_title('Accuracy by Quality (Baseline)')
-    axes[1, 1].set_xticks(quality_scores)
-    axes[1, 1].grid(True, alpha=0.3, axis='y')
-    
-    # 6. Learning Curve or Feature Summary
-    try:
-        results = model.evals_result()
-        if results:
-            train_rmse = results['validation_0']['rmse']
-            test_rmse = results['validation_1']['rmse']
-            
-            epochs = len(train_rmse)
-            axes[1, 2].plot(range(epochs), train_rmse, label='Training RMSE')
-            axes[1, 2].plot(range(epochs), test_rmse, label='Testing RMSE')
-            axes[1, 2].set_xlabel('Iteration')
-            axes[1, 2].set_ylabel('RMSE')
-            axes[1, 2].set_title('Learning Curve (Baseline)')
-            axes[1, 2].legend()
-            axes[1, 2].grid(True, alpha=0.3)
-    except:
-        axes[1, 2].axis('off')
-        top_features = importance_df.head(8)
-        feature_text = "Top 8 Features (Baseline):\n\n"
-        for _, row in top_features.iterrows():
-            feature_text += f"{row.feature}: {row.importance:.4f}\n"
-        
-        axes[1, 2].text(0.5, 0.5, feature_text,
-                       horizontalalignment='center',
-                       verticalalignment='center',
-                       fontsize=10,
-                       transform=axes[1, 2].transAxes)
-        axes[1, 2].set_title('Feature Importance (Top 8)')
+    axes[1].barh(range(len(importance_df)), importance_df['importance'])
+    axes[1].set_yticks(range(len(importance_df)))
+    axes[1].set_yticklabels(importance_df['feature'])
+    axes[1].set_xlabel('Feature Importance')
+    axes[1].set_title('Top 10 Feature Importance (Raw Data)')
+    axes[1].grid(True, alpha=0.3, axis='x')
     
     plt.tight_layout()
-    plt.suptitle('Baseline Model Results (No Preprocessing)', fontsize=16, y=1.02)
     plt.show()
     
     return importance_df
 
-# 5. Analyze Raw Data Statistics
-def analyze_raw_data(df):
-    """Analyze statistics of raw data"""
-    print("\n" + "="*60)
-    print("Raw Data Analysis")
-    print("="*60)
+# 5. Compare Raw vs Preprocessed Results
+def compare_results(raw_metrics, preprocessed_metrics=None):
+    """Compare results between raw and preprocessed data"""
+    print("\n" + "=" * 60)
+    print("COMPARISON: RAW DATA vs PREPROCESSED DATA")
+    print("=" * 60)
     
-    # Basic statistics
-    print("\nStatistical Summary:")
-    print(df.describe())
-    
-    # Check for missing values
-    missing_values = df.isnull().sum()
-    print(f"\nMissing Values:")
-    print(missing_values[missing_values > 0] if missing_values.sum() > 0 else "No missing values")
-    
-    # Check for duplicates
-    duplicates = df.duplicated().sum()
-    print(f"\nDuplicate Rows: {duplicates}")
-    
-    # Target distribution
-    print(f"\nTarget Variable (Quality) Distribution:")
-    print(df['quality'].value_counts().sort_index())
-    
-    # Feature correlations with target
-    print(f"\nCorrelation with Quality (Target):")
-    correlations = df.corr()['quality'].abs().sort_values(ascending=False)
-    print(correlations)
-    
-    return correlations
-
-# 6. Main Function for Baseline Model
-def main_baseline():
-    """Main function for baseline model training"""
-    print("="*80)
-    print("WINE QUALITY PREDICTION - BASELINE MODEL (NO PREPROCESSING)")
-    print("="*80)
-    
-    # Load raw data
-    df = load_raw_wine_data('dataset/winequality-red.csv')
-    
-    if df is None:
-        print("Failed to load data. Exiting.")
-        return None
-    
-    # Analyze raw data
-    correlations = analyze_raw_data(df)
-    
-    # Train baseline model
-    (model, X_train, X_test, y_train, y_test, 
-     y_train_pred, y_test_pred, y_test_pred_rounded) = train_baseline_xgboost_model(df)
-    
-    # Evaluate model
-    print("\n" + "="*60)
-    print("BASELINE MODEL PERFORMANCE")
-    print("="*60)
-    
-    print("Training Set Evaluation:")
-    train_metrics = evaluate_baseline_model(y_train, y_train_pred, "Training Set")
-    
-    print("\nTesting Set Evaluation:")
-    test_metrics = evaluate_baseline_model(y_test, y_test_pred, "Testing Set")
-    
-    # Show sample predictions
-    print("\nTesting Set - Sample Predictions (First 10):")
-    results_df = pd.DataFrame({
-        'Actual': y_test[:10],
-        'Predicted': np.round(y_test_pred[:10], 2),
-        'Rounded': y_test_pred_rounded[:10],
-        'Error': y_test[:10] - y_test_pred_rounded[:10]
-    })
-    print(results_df)
-    
-    # Visualize results
-    importance_df = visualize_baseline_results(y_test, y_test_pred, y_test_pred_rounded, model, X_train)
-    
-    # Summary
-    print("\n" + "="*80)
-    print("BASELINE MODEL SUMMARY")
-    print("="*80)
-    
-    print(f"Dataset: winequality-red.csv")
-    print(f"Total Samples: {df.shape[0]}")
-    print(f"Features Used: {X_train.shape[1]} (all original features)")
-    print(f"Training Samples: {X_train.shape[0]}")
-    print(f"Testing Samples: {X_test.shape[0]}")
-    print(f"\nPerformance Metrics (Testing Set):")
-    print(f"  - Exact Accuracy: {test_metrics['accuracy_exact']:.2%}")
-    print(f"  - Accuracy within ±1: {test_metrics['accuracy_within_one']:.2%}")
-    print(f"  - MAE: {test_metrics['mae']:.4f}")
-    print(f"  - RMSE: {test_metrics['rmse']:.4f}")
-    print(f"  - R² Score: {test_metrics['r2']:.4f}")
-    
-    print(f"\nTop 5 Most Important Features (Baseline):")
-    for i, (_, row) in enumerate(importance_df.head(5).iterrows(), 1):
-        print(f"  {i}. {row['feature']}: {row['importance']:.4f}")
-    
-    # Save baseline results for comparison
-    baseline_results = {
-        'model': model,
-        'X_train': X_train,
-        'X_test': X_test,
-        'y_train': y_train,
-        'y_test': y_test,
-        'train_metrics': train_metrics,
-        'test_metrics': test_metrics,
-        'importance_df': importance_df,
-        'correlations': correlations
-    }
-    
-    # Save predictions to CSV for comparison
-    predictions_df = pd.DataFrame({
-        'actual_quality': y_test,
-        'predicted_quality': y_test_pred,
-        'predicted_quality_rounded': y_test_pred_rounded
-    })
-    predictions_df.to_csv('baseline_predictions.csv', index=False)
-    print(f"\nBaseline predictions saved to 'baseline_predictions.csv'")
-    
-    print("\n" + "="*80)
-    print("COMPARISON NOTES:")
-    print("="*80)
-    print("1. This baseline model uses RAW DATA without any preprocessing")
-    print("2. No feature engineering, selection, or scaling was performed")
-    print("3. All original features were used")
-    print("4. The model uses the same XGBoost parameters as the preprocessed model")
-    print("5. Compare these results with the preprocessed model to see the impact of preprocessing")
-    print("\nKey metrics to compare:")
-    print("  - Exact accuracy (higher is better)")
-    print("  - Accuracy within ±1 score (higher is better)")
-    print("  - RMSE (lower is better)")
-    print("  - R² score (closer to 1 is better)")
-    
-    return baseline_results
-
-# 7. Quick Comparison Function (to be used after both models are trained)
-def quick_comparison(baseline_metrics, preprocessed_metrics=None):
-    """Quick comparison between baseline and preprocessed models"""
-    print("\n" + "="*80)
-    print("QUICK COMPARISON: BASELINE vs PREPROCESSED MODEL")
-    print("="*80)
-    
-    print("\nBASELINE MODEL (No Preprocessing):")
-    print(f"  Exact Accuracy: {baseline_metrics['accuracy_exact']:.2%}")
-    print(f"  Accuracy within ±1: {baseline_metrics['accuracy_within_one']:.2%}")
-    print(f"  RMSE: {baseline_metrics['rmse']:.4f}")
-    print(f"  R² Score: {baseline_metrics['r2']:.4f}")
+    print(f"\nRAW DATA Results:")
+    print(f"  Exact match accuracy: {raw_metrics['accuracy_exact']:.2%}")
+    print(f"  Accuracy within ±1 score: {raw_metrics['accuracy_within_one']:.2%}")
+    print(f"  MAE: {raw_metrics['mae']:.4f}")
+    print(f"  RMSE: {raw_metrics['rmse']:.4f}")
+    print(f"  R² Score: {raw_metrics['r2']:.4f}")
     
     if preprocessed_metrics:
-        print("\nPREPROCESSED MODEL:")
-        print(f"  Exact Accuracy: {preprocessed_metrics['accuracy_exact']:.2%}")
-        print(f"  Accuracy within ±1: {preprocessed_metrics['accuracy_within_one']:.2%}")
+        print(f"\nPREPROCESSED DATA Results:")
+        print(f"  Exact match accuracy: {preprocessed_metrics['accuracy_exact']:.2%}")
+        print(f"  Accuracy within ±1 score: {preprocessed_metrics['accuracy_within_one']:.2%}")
+        print(f"  MAE: {preprocessed_metrics['mae']:.4f}")
         print(f"  RMSE: {preprocessed_metrics['rmse']:.4f}")
         print(f"  R² Score: {preprocessed_metrics['r2']:.4f}")
         
-        print("\n" + "-"*80)
-        print("IMPROVEMENT FROM PREPROCESSING:")
-        print("-"*80)
+        print(f"\n" + "-" * 60)
+        print(f"IMPROVEMENT FROM PREPROCESSING:")
+        print(f"-" * 60)
         
         # Calculate improvements
-        acc_improvement = preprocessed_metrics['accuracy_exact'] - baseline_metrics['accuracy_exact']
-        acc_within_one_improvement = preprocessed_metrics['accuracy_within_one'] - baseline_metrics['accuracy_within_one']
-        rmse_improvement = baseline_metrics['rmse'] - preprocessed_metrics['rmse']  # Negative is improvement
-        r2_improvement = preprocessed_metrics['r2'] - baseline_metrics['r2']
+        acc_exact_improvement = preprocessed_metrics['accuracy_exact'] - raw_metrics['accuracy_exact']
+        acc_within_one_improvement = preprocessed_metrics['accuracy_within_one'] - raw_metrics['accuracy_within_one']
+        mae_improvement = raw_metrics['mae'] - preprocessed_metrics['mae']  # Negative is better
+        rmse_improvement = raw_metrics['rmse'] - preprocessed_metrics['rmse']  # Negative is better
+        r2_improvement = preprocessed_metrics['r2'] - raw_metrics['r2']
         
-        print(f"  Exact Accuracy: {acc_improvement:+.2%} improvement")
-        print(f"  Accuracy within ±1: {acc_within_one_improvement:+.2%} improvement")
-        print(f"  RMSE: {rmse_improvement:+.4f} (negative means improvement)")
-        print(f"  R² Score: {r2_improvement:+.4f} improvement")
+        print(f"  Exact match accuracy: {acc_exact_improvement:+.2%}")
+        print(f"  Accuracy within ±1 score: {acc_within_one_improvement:+.2%}")
+        print(f"  MAE improvement: {mae_improvement:+.4f} (negative means better)")
+        print(f"  RMSE improvement: {rmse_improvement:+.4f} (negative means better)")
+        print(f"  R² Score improvement: {r2_improvement:+.4f}")
         
         # Summary
-        print("\n" + "="*80)
-        print("SUMMARY:")
-        print("="*80)
-        if acc_improvement > 0:
-            print("✓ Preprocessing improved model accuracy")
+        print(f"\nSUMMARY:")
+        if acc_within_one_improvement > 0:
+            print(f"✅ Preprocessing improved accuracy within ±1 score")
         else:
-            print("✗ Preprocessing did not improve model accuracy")
+            print(f"⚠️ Preprocessing did not improve accuracy within ±1 score")
             
-        if rmse_improvement > 0:
-            print("✓ Preprocessing reduced prediction error (RMSE)")
+        if mae_improvement > 0:
+            print(f"✅ Preprocessing reduced MAE (improved predictions)")
         else:
-            print("✗ Preprocessing did not reduce prediction error")
-    else:
-        print("\nPreprocessed model metrics not provided.")
-        print("Run the preprocessed model training to get comparison data.")
+            print(f"⚠️ Preprocessing did not reduce MAE")
 
-# Execute baseline model training
-if __name__ == "__main__":
-    print("Training Baseline Model (No Preprocessing)...")
-    baseline_results = main_baseline()
+# 6. Main Program for Raw Data
+def main_raw():
+    """Main program for raw data analysis"""
+    print("=" * 60)
+    print("Wine Quality Prediction - RAW DATA (No Preprocessing)")
+    print("=" * 60)
     
-    if baseline_results:
-        print("\n" + "="*80)
-        print("BASELINE MODEL TRAINING COMPLETE")
-        print("="*80)
-        print("To compare with preprocessed model:")
-        print("1. Run your preprocessed model training")
-        print("2. Use the quick_comparison() function with both sets of metrics")
+    # Load raw data
+    X, y = load_raw_data()
+    
+    if X is None:
+        return
+    
+    # Train model on raw data
+    model, X_train, X_test, y_train, y_test, y_train_pred, y_test_pred = train_xgboost_model_raw(X, y)
+    
+    # Evaluate model
+    print("\n" + "=" * 60)
+    print("MODEL PERFORMANCE - RAW DATA (Testing Set)")
+    print("=" * 60)
+    
+    test_metrics_raw = evaluate_model(y_test, y_test_pred, "Testing Set (Raw Data)")
+    
+    # Show sample predictions
+    print("\n" + "-" * 60)
+    print("Sample Predictions (First 10)")
+    print("-" * 60)
+    
+    results_df = pd.DataFrame({
+        'Actual': y_test[:10],
+        'Predicted': np.round(y_test_pred[:10], 2),
+        'Rounded': np.round(y_test_pred[:10]).astype(int),
+        'Error': y_test[:10] - np.round(y_test_pred[:10]).astype(int)
+    })
+    print(results_df)
+    
+    # Simple visualization
+    importance_df = simple_visualization_raw(y_test, y_test_pred, model, X_train)
+    
+    # Save model
+    print("\nSaving raw data model...")
+    model.save_model('xgboost_wine_quality_model_raw.json')
+    print("Model saved as 'xgboost_wine_quality_model_raw.json'")
+    
+    # Final summary
+    print("\n" + "=" * 60)
+    print("RAW DATA TESTING SET RESULTS SUMMARY")
+    print("=" * 60)
+    print(f"Exact match accuracy: {test_metrics_raw['accuracy_exact']:.2%}")
+    print(f"Accuracy within ±1 score: {test_metrics_raw['accuracy_within_one']:.2%}")
+    print(f"MAE: {test_metrics_raw['mae']:.4f}")
+    print(f"RMSE: {test_metrics_raw['rmse']:.4f}")
+    
+    # Performance assessment
+    print("\n" + "-" * 60)
+    print("PERFORMANCE ASSESSMENT (Raw Data):")
+    
+    if test_metrics_raw['accuracy_within_one'] >= 0.85:
+        print("✅ EXCELLENT - Meets industry standard (≥85% within ±1)")
+    elif test_metrics_raw['accuracy_within_one'] >= 0.75:
+        print("⚠️ ACCEPTABLE - Good but could improve (75-85% within ±1)")
+    else:
+        print("❌ NEEDS IMPROVEMENT - Below expectations (<75% within ±1)")
+    
+    return model, test_metrics_raw, importance_df
+
+# 7. Execute with option to compare with preprocessed results
+def main():
+    """Main execution with optional comparison"""
+    print("Starting Raw Data Analysis...")
+    print("This will train XGBoost on raw data without any preprocessing.")
+    print("\nNote: Run the preprocessed version first to get comparison data.")
+    
+    # Run raw data analysis
+    model_raw, metrics_raw, importance_df_raw = main_raw()
+    
+    # Ask if user wants to compare with preprocessed results
+    print("\n" + "=" * 60)
+    response = input("Do you have preprocessed results to compare? (y/n): ")
+    
+    if response.lower() == 'y':
+        # These would be the metrics from your preprocessed model
+        # You'll need to run the preprocessed version first and note down the metrics
+        print("\nPlease enter your preprocessed model metrics:")
         
-        # Example of how to use quick_comparison (uncomment and modify when you have preprocessed metrics)
-        """
-        # Assuming you have preprocessed_metrics from your preprocessed model
-        preprocessed_metrics = {
-            'accuracy_exact': 0.65,  # Replace with actual value
-            'accuracy_within_one': 0.90,  # Replace with actual value
-            'rmse': 0.55,  # Replace with actual value
-            'r2': 0.45  # Replace with actual value
-        }
-        
-        quick_comparison(baseline_results['test_metrics'], preprocessed_metrics)
-        """
+        try:
+            preprocessed_accuracy_exact = float(input("Exact match accuracy (e.g., 0.625 for 62.5%): "))
+            preprocessed_accuracy_within_one = float(input("Accuracy within ±1 score (e.g., 0.9125 for 91.25%): "))
+            preprocessed_mae = float(input("MAE (e.g., 0.4562): "))
+            preprocessed_rmse = float(input("RMSE (e.g., 0.5893): "))
+            preprocessed_r2 = float(input("R² Score (e.g., 0.3245): "))
+            
+            preprocessed_metrics = {
+                'accuracy_exact': preprocessed_accuracy_exact,
+                'accuracy_within_one': preprocessed_accuracy_within_one,
+                'mae': preprocessed_mae,
+                'rmse': preprocessed_rmse,
+                'r2': preprocessed_r2
+            }
+            
+            # Compare results
+            compare_results(metrics_raw, preprocessed_metrics)
+            
+        except ValueError:
+            print("Invalid input. Please enter numeric values.")
+    else:
+        print("\nTo compare results:")
+        print("1. Run the preprocessed model (final_test.py)")
+        print("2. Note down the testing set metrics")
+        print("3. Run this script again and enter those metrics when prompted")
+    
+    print("\n" + "=" * 60)
+    print("RAW DATA ANALYSIS COMPLETE")
+    print("=" * 60)
+    
+    return model_raw, metrics_raw, importance_df_raw
+
+# Execute main program
+if __name__ == "__main__":
+    model_raw, metrics_raw, importance_df_raw = main()
