@@ -98,40 +98,40 @@ def feature_engineering(df):
     
     df_engineered = df.copy()
     
-    # 1. Create total acidity feature
-    df_engineered['total_acidity'] = (
-        df_engineered['fixed acidity'] + 
-        df_engineered['volatile acidity'] + 
-        df_engineered['citric acid']
-    )
-    print("Created new feature: Total Acidity (total_acidity)")
+    # # 1. Create total acidity feature
+    # df_engineered['total_acidity'] = (
+    #     df_engineered['fixed acidity'] + 
+    #     df_engineered['volatile acidity'] + 
+    #     df_engineered['citric acid']
+    # )
+    # print("Created new feature: Total Acidity (total_acidity)")
     
-    # 2. Create SO2 ratio feature
-    df_engineered['free_SO2_ratio'] = (
-        df_engineered['free sulfur dioxide'] / 
-        df_engineered['total sulfur dioxide']
-    )
-    # Handle division by zero errors
-    df_engineered['free_SO2_ratio'] = df_engineered['free_SO2_ratio'].replace([np.inf, -np.inf], np.nan)
-    df_engineered['free_SO2_ratio'] = df_engineered['free_SO2_ratio'].fillna(0)
-    print("Created new feature: Free SO2 Ratio (free_SO2_ratio)")
+    # # 2. Create SO2 ratio feature
+    # df_engineered['free_SO2_ratio'] = (
+    #     df_engineered['free sulfur dioxide'] / 
+    #     df_engineered['total sulfur dioxide']
+    # )
+    # # Handle division by zero errors
+    # df_engineered['free_SO2_ratio'] = df_engineered['free_SO2_ratio'].replace([np.inf, -np.inf], np.nan)
+    # df_engineered['free_SO2_ratio'] = df_engineered['free_SO2_ratio'].fillna(0)
+    # print("Created new feature: Free SO2 Ratio (free_SO2_ratio)")
     
-    # 3. Create acid-base balance feature
-    df_engineered['acid_balance'] = (
-        df_engineered['fixed acidity'] / 
-        (df_engineered['pH'] + 1e-10)  # Avoid division by zero
-    )
-    print("Created new feature: Acid Balance (acid_balance)")
+    # # 3. Create acid-base balance feature
+    # df_engineered['acid_balance'] = (
+    #     df_engineered['fixed acidity'] / 
+    #     (df_engineered['pH'] + 1e-10)  # Avoid division by zero
+    # )
+    # print("Created new feature: Acid Balance (acid_balance)")
     
-    # 4. Create alcohol to acidity ratio
-    df_engineered['alcohol_acidity_ratio'] = (
-        df_engineered['alcohol'] / 
-        (df_engineered['total_acidity'] + 1e-10)
-    )
-    print("Created new feature: Alcohol Acidity Ratio (alcohol_acidity_ratio)")
+    # # 4. Create alcohol to acidity ratio
+    # df_engineered['alcohol_acidity_ratio'] = (
+    #     df_engineered['alcohol'] / 
+    #     (df_engineered['total_acidity'] + 1e-10)
+    # )
+    # print("Created new feature: Alcohol Acidity Ratio (alcohol_acidity_ratio)")
     
-    print(f"After feature engineering, data shape: {df_engineered.shape}")
-    print(f"Number of new features: {len(df_engineered.columns) - len(df.columns)}")
+    # print(f"After feature engineering, data shape: {df_engineered.shape}")
+    # print(f"Number of new features: {len(df_engineered.columns) - len(df.columns)}")
     
     return df_engineered
 
