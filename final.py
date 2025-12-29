@@ -59,7 +59,6 @@ def clean_data(df):
     Based on textbook principles:
     1. Handle duplicate values
     2. Handle outliers
-    3. Handle inconsistent data
     """
     print("\n=== Data Cleaning ===")
     
@@ -155,7 +154,8 @@ def select_features(df, target_column='quality'):
     sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0)
     plt.title('Feature Correlation Matrix')
     plt.tight_layout()
-    plt.show()
+    # plt.show()
+    plt.savefig('correlation_matrix.png', dpi=300, bbox_inches='tight')
     
     # Select features based on correlation (threshold can be adjusted)
     # Here we select features with correlation greater than 0.05
@@ -169,6 +169,7 @@ def select_features(df, target_column='quality'):
 
 # 6. Data Standardization/Normalization
 def scale_features(df, features, target_column='quality'):
+    print("Standardization Features:\n", features)
     """
     Feature Scaling
     Use standardization (Z-score normalization) to make features have zero mean and unit variance
@@ -177,6 +178,7 @@ def scale_features(df, features, target_column='quality'):
     
     # Separate features and target
     X = df[features]
+    print("Standardization X:\n",X)
     y = df[target_column]
     
     # Initialize scaler
@@ -184,9 +186,11 @@ def scale_features(df, features, target_column='quality'):
     
     # Fit and transform features
     X_scaled = scaler.fit_transform(X)
+    print("Standardization X_scaled:\n",X_scaled)
     
     # Create new DataFrame
     X_scaled_df = pd.DataFrame(X_scaled, columns=features)
+    print("Standardization X_scaled_df:\n",X_scaled_df)
     
     print("Scaling completed!")
     print("Statistical summary after scaling:")
