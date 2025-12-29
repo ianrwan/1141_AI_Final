@@ -135,7 +135,7 @@ def feature_engineering(df):
     return df_engineered
 
 # 5. Feature Selection
-def select_features(df, target_column='quality'):
+def select_features(df, target_column='quality', name='red'):
     """
     Feature Selection
     Use correlation analysis and domain knowledge to select important features
@@ -154,8 +154,8 @@ def select_features(df, target_column='quality'):
     sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0)
     plt.title('Feature Correlation Matrix')
     plt.tight_layout()
-    # plt.show()
-    plt.savefig('correlation_matrix.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'correlation_matrix_{name}.png', dpi=300, bbox_inches='tight')
+    plt.close()
     
     # Select features based on correlation (threshold can be adjusted)
     # Here we select features with correlation greater than 0.05
@@ -250,7 +250,7 @@ def apply_pca(X, n_components=2):
     return X_pca, pca
 
 # 10. Complete Preprocessing Pipeline
-def complete_preprocessing_pipeline(file_path='dataset/winequality-red.csv', test_size=0.2):
+def complete_preprocessing_pipeline(file_path='dataset/winequality-red.csv', test_size=0.2, name='red'):
     """
     Complete data preprocessing pipeline
     """
@@ -275,7 +275,7 @@ def complete_preprocessing_pipeline(file_path='dataset/winequality-red.csv', tes
     # Step 5: Handle categorical variables (this dataset has none, so skip)
     
     # Step 6: Feature selection
-    selected_features = select_features(df_engineered)
+    selected_features = select_features(df_engineered, name=name)
     
     # Step 7: Feature scaling
     X_scaled, y, scaler = scale_features(df_engineered, selected_features)
@@ -308,7 +308,7 @@ def complete_preprocessing_pipeline(file_path='dataset/winequality-red.csv', tes
     return results
 
 # 11. Visualize Preprocessing Results
-def visualize_preprocessing_results(results):
+def visualize_preprocessing_results(results, name='red'):
     """
     Visualize key results from preprocessing
     """
@@ -380,16 +380,13 @@ def visualize_preprocessing_results(results):
         axes[1, 2].set_title('PCA Dimensionality Reduction')
     
     plt.tight_layout()
-    plt.show()
+    plt.savefig(f'chart_{name}.png', dpi=300, bbox_inches='tight')
+    plt.close()
 
-# Main program execution
-if __name__ == "__main__":
-    # Execute complete preprocessing pipeline
-    results = complete_preprocessing_pipeline()
-    
+def result_output(results, name='red'):
     if results:
         # Visualize results
-        visualize_preprocessing_results(results)
+        visualize_preprocessing_results(results, name)
         
         # Output summary of preprocessed data
         print("\nPreprocessing Results Summary:")
@@ -399,10 +396,26 @@ if __name__ == "__main__":
         print(f"Number of selected features: {len(results['selected_features'])}")
         print(f"Training set shape: {results['X_train'].shape}")
         print(f"Testing set shape: {results['X_test'].shape}")
-        
+
+        # Concat X and y Data
+        train_result = results['X_train'].reset_index(drop=True)
+        train_result['quality'] = results['y_train'].reset_index(drop=True)
+        print("Show train_result concat X and y Data:\n", train_result)
+
+        test_result = results['X_test'].reset_index(drop=True)
+        test_result['quality'] = results['y_test'].reset_index(drop=True)
+        print("Show test_result concat X and y Data:\n", test_result)
+
         # Save preprocessed data
-        results['X_train'].to_csv('X_train_preprocessed.csv', index=False)
-        results['X_test'].to_csv('X_test_preprocessed.csv', index=False)
-        results['y_train'].to_csv('y_train_preprocessed.csv', index=False)
-        results['y_test'].to_csv('y_test_preprocessed.csv', index=False)
+        train_result.to_csv(f'training_data_{name}.csv', index=False)
+        test_result.to_csv(f'testing_data_{name}.csv', index=False)
         print("\nPreprocessed data saved as CSV files")
+
+# Main program execution
+if __name__ == "__main__":
+    # Execute complete preprocessing pipeline
+    results_red = complete_preprocessing_pipeline()
+    result_output(results_red)
+    
+    
+
