@@ -6,6 +6,7 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
 import warnings
+import os
 warnings.filterwarnings('ignore')
 
 # 1. Data Loading
@@ -261,7 +262,7 @@ def complete_preprocessing_pipeline(file_path='dataset/winequality-red.csv', tes
     # Step 1: Load data
     df = load_wine_data(file_path)
     if df is None:
-        return None
+        return None    
     
     # Step 2: Data exploration
     df = explore_data(df)
@@ -414,10 +415,18 @@ def result_output(results, name='red'):
 # Main program execution
 if __name__ == "__main__":
     # Execute complete preprocessing pipeline
-    results_red = complete_preprocessing_pipeline('dataset/winequality-red.csv', name='red')
-    results_white = complete_preprocessing_pipeline('dataset/winequality-white.csv', name='white')
-    result_output(results_red, name='red')
-    result_output(results_white, name='white')
+    df_red = load_wine_data('dataset/winequality-red.csv')
+    df_white = load_wine_data('dataset/winequality-white.csv')
+    df_total = pd.concat([df_red, df_white], ignore_index=True)
+    df_total.to_csv(f'winequality-total.csv', sep=';',index=False)
+    print(df_red.shape)
+    print(df_white.shape)
+    print(df_total.shape)
+    results_total = complete_preprocessing_pipeline('winequality-total.csv', name='total')
+    result_output(results_total, name='total')
+
+    os.remove('winequality-total.csv')
+    print('winequality-total.csv is deleted')
     
     
 
