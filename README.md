@@ -7,5 +7,5 @@
 
 ### Final
 1. final.py is the main data preprocessing process
-2. White wine datas is splite to testing_data_white.csv and training_data_white.csv.
-3. Red wine datas is splite to testing_data_red.csv and training_data_red.csv.
+2. White wine datas is split to testing_data_white.csv and training_data_white.csv.
+3. Red wine datas is split to testing_data_red.csv and training_data_red.csv.
