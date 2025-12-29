@@ -414,8 +414,10 @@ def result_output(results, name='red'):
 # Main program execution
 if __name__ == "__main__":
     # Execute complete preprocessing pipeline
-    results_red = complete_preprocessing_pipeline()
-    result_output(results_red)
+    results_red = complete_preprocessing_pipeline('dataset/winequality-red.csv', name='red')
+    results_white = complete_preprocessing_pipeline('dataset/winequality-white.csv', name='white')
+    result_output(results_red, name='red')
+    result_output(results_white, name='white')
     
     
 
